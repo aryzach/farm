@@ -1,0 +1,2 @@
+@reboot echo $(date) >> rebootDateTimes.txt && /home/pi/start.cron &
+

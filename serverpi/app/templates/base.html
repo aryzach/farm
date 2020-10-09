@@ -1,0 +1,15 @@
+<html>
+    <head>
+      <title>Water</title>
+    </head>
+    <body>
+            <a href="{{ url_for('index') }}">Home</a>
+        <div>Pumps:
+            <a href="{{ url_for('pumps') }}">Pumps</a>
+        </div>
+        <hr>
+        {% block content %}{% endblock %}
+    </body>
+</html>
+
+
