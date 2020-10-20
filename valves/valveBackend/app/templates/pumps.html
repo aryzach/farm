@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+ <form action="" method="post" novalidate>
+     {{ form.hidden_tag() }}
+     {% if lowAgPumpStatus == 'off' %}
+     <p>
+      {{ form.onLowAg }}<br>
+     </p>
+     {% else %}
+     <p>
+      {{ form.offLowAg }}<br>
+     </p>
+     {% endif %}
+     {% if medAgPumpStatus == 'off' %}
+     <p>
+      {{ form.onMedAg }}<br>
+     </p>
+     {% else %}
+     <p>
+      {{ form.offMedAg }}<br>
+     </p>
+     {% endif %}
+ </form>
+
+{% endblock %}

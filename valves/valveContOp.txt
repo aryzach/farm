@@ -1,1 +1,0 @@
-edit file on zachpi, /etc/rs.local or something like that to run program on startup

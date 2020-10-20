@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
 import time
 from gpiozero import Button
+from datetime import datetime
 
 GPIO.setmode(GPIO.BCM)
 
@@ -13,6 +14,9 @@ lowAgPin = 14
 medAgPin = 15
 
 floatSwitch = Button(2) 
+
+# global vars!
+wasCreekLow = False
 
 # loop through pins and set mode and state to 'low'
 
@@ -36,8 +40,22 @@ def cyclePump(pump):
         pumpOn(pump)
     
 def isCreekLow():
-    return not floatSwitch.is_pressed
+    isCreekLow = not floatSwitch.is_pressed
+    decideCreekLowLog(isCreekLow)
+    return isCreekLow 
 
+def decideCreekLowLog(isCreekLow):
+    if isCreekLow and not wasCreekLow:
+        writeTime()
+        wasCreekLow = True
+    elif not isCreekLow:
+        wasCreekLow = False
+
+def writeTime():
+    outFile = open("creekOff.txt", "a")
+    outFile.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    outFile.close()
+    
 def lowAgOff():
     pumpOff(lowAgPin)
 
