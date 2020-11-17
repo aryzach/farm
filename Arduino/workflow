@@ -1,0 +1,8 @@
+compile/verify and upload
+amake -u 8266 valveMain/valveMain.ino /dev/ttyUSB0 
+
+view serial output
+amake -s /dev/ttyUSB0 115200 
+
+or view serial here
+minicom -D /dev/ttyUSB0 -b 115200 

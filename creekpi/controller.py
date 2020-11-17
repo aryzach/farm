@@ -41,15 +41,18 @@ def cyclePump(pump):
     
 def isCreekLow():
     isCreekLow = not floatSwitch.is_pressed
-    decideCreekLowLog(isCreekLow)
+    shouldLog = decideCreekLowLog(isCreekLow)
+    if shouldLog:
+        writeTime()
     return isCreekLow 
 
 def decideCreekLowLog(isCreekLow):
     if isCreekLow and not wasCreekLow:
-        writeTime()
         wasCreekLow = True
+        return True
     elif not isCreekLow:
         wasCreekLow = False
+        return False
 
 def writeTime():
     outFile = open("creekOff.txt", "a")

@@ -1,11 +1,11 @@
 from twistedApp import app
 from flask import render_template, flash, redirect, url_for
 from flask_redis import FlaskRedis
-from app.forms import PumpForm, ValveForm 
-#from flask_wtf import FlaskForm
-#from wtforms import SubmitField, SelectField
+from app.forms import PumpForm 
+from flask_wtf import FlaskForm
+from wtforms import SubmitField
 import pickle
-from .tools import ping, timeTools, emailTools
+from .tools import ping, timeTools
 
 app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 redis_client = FlaskRedis(app)
@@ -51,35 +51,13 @@ def pumps():
     else:
         return render_template('notAvailable.html')
 
-@app.route('/valves', methods=['GET','POST'])
-def valves():
-    # get some value to know whether to display form or to display current valve / sensor info (ie valves are on and algorithm running)
-    if True:
-        form = ValveForm()
-    #where I could get and show status of all valve sensors
-    #pickled = redis_client.get("creekpi")
-    #unpickled = pickle.loads(pickled)
-
-        if form.validate_on_submit():
-            print('valve 1: ', form.valve1.data)
-            print('valve 2: ', form.valve2.data)
-            print('valve 3: ', form.valve3.data)
-            return redirect(url_for('valves')) 
-        return render_template('valves.html', form=form)
-    else:
-        # render something else here eventually
-        return render_template('valves.html', form=form) 
-        
 
 def setPumps(unpickled, pump, status):
-    if status == 'off':
-        emailTools.emailData()
     unpickled[pump] = status
     print(unpickled)
     pickled = pickle.dumps(unpickled)
     redis_client.set('creekpi',pickled)
 
-    
 
 '''
 @app.route('/on', methods=['GET'])
