@@ -4,6 +4,7 @@ from pythonping import ping
 from time import gmtime, strftime, localtime
 import re
 import json
+from pathlib import Path
 
 # frequency of pings in seconds
 FREQUENCY = 60*10 
@@ -64,9 +65,14 @@ while True:
         result = ping(devices[device]).rtt_avg_ms
         results[device] = result 
         entry = {currentTime : results}
-    with open("/home/pi/twistedApp/app/tools/network/ping.json", "w") as f:
-        allData = json.load(f)
-        allData.update(entry)
+    pingPath = "/home/pi/twistedApp/app/tools/network/ping.json" 
+    if Path(pingPath).exists():
+        with open(pingPath) as f:
+            allData = json.load(f)
+    else:
+        allData = {}
+    allData.update(entry)
+    with open(pingPath,"w") as f:
         f.seek(0)
         json.dump(allData, f)
     time.sleep(FREQUENCY)

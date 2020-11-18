@@ -84,39 +84,26 @@ def network():
     img.seek(0)
     return send_file(img, mimetype='image/png')
     
-    #canvas = FigureCanvas(fig)
-    #output = io.BytesIO() 
-    #canvas.print_png(output)
-    #response = make_response(output.getvalue())
-    #response.mimetype = 'image/png'
-    #return response
-
-    #return render_template("network.html", plot = '/home/pi/twistedApp/static/images/new_plot.png')
-    #return render_template('network.html', name = 'new_plot', url ='/home/pi/twistedApp/static/images/new_plot.png')
 
 def generatePlot():
-    timeSpacing = 4
-    jlines = []
-    times = []
-    with open('/home/pi/twistedApp/app/tools/network/ping.json','r') as f:
-     #lines = f.read().splitlines()
-        for line in f:
-            if line[0] == '{':
-                jlines.append(ast.literal_eval(json.loads(json.dumps(line.strip()))))
-            else:
-                times.append(line.strip())
-        f.close()
+    TIMESPACING = 4
+    TIMEPOINTS = 100
 
-    times = times[1::timeSpacing]
-    devices = list(map(lambda x: list(x.keys()), jlines))[0]
-    latencies = list(map(lambda x: list(x.values()), jlines))
+    with open('/home/pi/twistedApp/app/tools/network/ping.json','r') as f:
+        jlines = json.load(f)
+
+    times = (list(jlines.keys()))[-TIMEPOINTS:]
+    showTimes = times[1::TIMESPACING]
+
+    devices = list(jlines[times[0]].keys())
+
+    latencies = list(map(lambda x: list((jlines[x]).values()), jlines))[-TIMEPOINTS:]
 
     plt.figure(figsize=(21,11),tight_layout=True)  
     plt.pcolormesh(latencies, cmap='Reds') 
     plt.xticks(list(range(len(devices))),devices,rotation='vertical',size='small')
-    plt.yticks(list(map(lambda x:x*timeSpacing,list(range(len(times))))), times, rotation='horizontal',size='small')
+    plt.yticks(list(map(lambda x:x*TIMESPACING,list(range(len(showTimes))))), showTimes, rotation='horizontal',size='small')
     plt.colorbar()
-    plt.savefig('/home/pi/twistedApp/static/images/new_plot.jpg')
 
     return plt
 
