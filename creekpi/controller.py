@@ -15,8 +15,6 @@ medAgPin = 15
 
 floatSwitch = Button(2) 
 
-# global vars!
-wasCreekLow = False
 
 # loop through pins and set mode and state to 'low'
 
@@ -41,18 +39,22 @@ def cyclePump(pump):
     
 def isCreekLow():
     isCreekLow = not floatSwitch.is_pressed
-    shouldLog = decideCreekLowLog(isCreekLow)
-    if shouldLog:
-        writeTime()
     return isCreekLow 
 
-def decideCreekLowLog(isCreekLow):
-    if isCreekLow and not wasCreekLow:
-        wasCreekLow = True
-        return True
-    elif not isCreekLow:
-        wasCreekLow = False
-        return False
+class CreekLogger:
+    def __init__(self):
+        self.wasCreekLow = False 
+
+    def decideCreekLowLog(self):
+        if isCreekLow() and not self.wasCreekLow:
+            self.wasCreekLow = True
+            return True
+        elif not isCreekLow():
+            self.wasCreekLow = False
+            return False
+        else:
+            return False
+
 
 def writeTime():
     outFile = open("creekOff.txt", "a")

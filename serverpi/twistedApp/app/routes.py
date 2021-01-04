@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import SubmitField
 import pickle
 from .tools import ping, timeTools
+import os
 
 import matplotlib.pyplot as plt 
 import numpy as np 
@@ -13,10 +14,16 @@ from matplotlib.colors import LogNorm
 import json
 import ast
 import io 
-
+from pathlib import Path
+from time import time
 
 app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 redis_client = FlaskRedis(app)
+
+PINGFILE = os.path.join(os.path.dirname(__file__), 'tools/network/ping.json')
+TESTSPEEDFILE = os.path.join(os.path.dirname(__file__), 'tools/network/testspeed.json')
+
+
 
 #initialize database creekpi
 # TODO: redis.get(creekpi), if no value, then set all. If value exists, set only initial pump states and maybe others
@@ -42,7 +49,12 @@ def pumps():
     command = unpickled['command']
     data = unpickled['data']
     pickledTime = redis_client.get("creekpi-time")
-    unpickledTime = pickle.loads(pickledTime)
+    if pickledTime == None:
+        timeIsRecent = False
+    else:
+        unpickledTime = pickle.loads(pickledTime)
+        timeIsRecent = timeTools.isRecent(unpickledTime)
+
 
     lowAgPumpStatus = command['lowAg']
     medAgPumpStatus = command['medAg']
@@ -61,11 +73,11 @@ def pumps():
             setPumps(unpickled, 'medAg', 'off')
             return redirect(url_for('pumps'))
 
-    print(ping.getPing("creekpi"))
-    if ping.getPing("creekpi") and timeTools.isRecent(unpickledTime):
+    #print(ping.getPing("creekpi"))
+    if ping.getPing("creekpi") and timeIsRecent:
         return render_template('pumps.html', form=form, lowAgPumpStatus=lowAgPumpStatus, medAgPumpStatus=medAgPumpStatus)
     else:
-        return render_template('notAvailable.html')
+        return render_template('notAvailable.html', device='tom, creek thing')
 
 
 def setPumps(unpickled, pump, status):
@@ -78,34 +90,74 @@ def setPumps(unpickled, pump, status):
 
 @app.route('/network', methods=['GET'])
 def network():
-    fig = generatePlot() 
-    img = io.BytesIO()
-    fig.savefig(img)
-    img.seek(0)
-    return send_file(img, mimetype='image/png')
+    if Path(PINGFILE).exists():
+        fig = generatePingPlot() 
+        img = io.BytesIO()
+        fig.savefig(img)
+        img.seek(0)
+        return send_file(img, mimetype='image/png')
+    else:
+        return render_template('notAvailable.html', device='network tool')
+
     
 
-def generatePlot():
+def generatePingPlot():
     TIMESPACING = 4
     TIMEPOINTS = 100
 
-    with open('/home/pi/twistedApp/app/tools/network/ping.json','r') as f:
+    with open(PINGFILE,'r') as f:
         jlines = json.load(f)
 
     times = (list(jlines.keys()))[-TIMEPOINTS:]
     showTimes = times[1::TIMESPACING]
 
-    devices = list(jlines[times[0]].keys())
+    destinations = list(jlines[times[-1]].keys())
 
     latencies = list(map(lambda x: list((jlines[x]).values()), jlines))[-TIMEPOINTS:]
 
-    plt.figure(figsize=(21,11),tight_layout=True)  
-    plt.pcolormesh(latencies, cmap='Reds') 
-    plt.xticks(list(range(len(devices))),devices,rotation='vertical',size='small')
+    fig = plt.figure(figsize=(21,11),tight_layout=True)  
+    ax = fig.add_subplot(111) #
+    plt.pcolormesh(latencies, cmap='Reds',linewidth=5)
+    ax.grid(True, color="crimson", lw=2,axis='x') 
+    plt.xticks(list(range(len(destinations))),destinations,rotation='vertical',size='small')
     plt.yticks(list(map(lambda x:x*TIMESPACING,list(range(len(showTimes))))), showTimes, rotation='horizontal',size='small')
     plt.colorbar()
-
     return plt
+
+@app.route('/testspeed', methods=['GET'])
+def testspeed():
+    if Path(TESTSPEEDFILE).exists():
+        fig = generateSpeedPlot() 
+        img = io.BytesIO()
+        fig.savefig(img)
+        img.seek(0)
+        return send_file(img, mimetype='image/png')
+    else:
+        return render_template('notAvailable.html', device='speed test tool')
+
+def generateSpeedPlot():
+    TIMESPACING = 4
+    TIMEPOINTS = 100
+
+    with open(TESTSPEEDFILE,'r') as f:
+        jlines = json.load(f)
+
+    times = (list(jlines.keys()))[-TIMEPOINTS:]
+    showTimes = times[1::TIMESPACING]
+
+    destinations = list(jlines[times[-1]].keys())
+
+    latencies = list(map(lambda x: list((jlines[x]).values()), jlines))[-TIMEPOINTS:]
+
+    fig = plt.figure(figsize=(21,11),tight_layout=True)  
+    ax = fig.add_subplot(111) #
+    plt.pcolormesh(latencies, cmap='Reds',linewidth=5)
+    ax.grid(True, color="crimson", lw=2,axis='x') 
+    plt.xticks(list(range(len(destinations))),destinations,rotation='vertical',size='small')
+    plt.yticks(list(map(lambda x:x*TIMESPACING,list(range(len(showTimes))))), showTimes, rotation='horizontal',size='small')
+    plt.colorbar()
+    return plt
+
 
 
 '''

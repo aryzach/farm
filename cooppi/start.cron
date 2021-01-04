@@ -6,16 +6,15 @@
 # Ensure the environment is available
 #source /home/pi/.bashrc
 # Create a new tmux session named helloworld...
-echo "before tmux start" >> startlog.txt
 /usr/bin/tmux new-session -d -s startPrograms 
-echo "after tmux start" >> startlog.txt
 # ...and control the tmux session (initially ensure the environment
 #   is available, then run commands)
 
 #/usr/bin/tmux send-keys -t startPrograms ". /home/pi/.bashrc" C-m
-/bin/sleep 5
+
+/usr/bin/tmux send-keys -t startPrograms "/bin/bash" C-m
+
 #/usr/bin/tmux send-keys -t startPrograms "echo \""Current date and time Linux %s\n" "$(date)"\"" C-m
-echo "before tmux run program" >> startlog.txt
+
 /usr/bin/tmux send-keys -t startPrograms "/home/pi/start.sh" C-m
-echo "after tmux run program" >> startlog.txt
 

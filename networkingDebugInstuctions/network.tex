@@ -1,0 +1,107 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{lmodern}
+\usepackage{fontenc}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%section title bold
+
+%font
+\renewcommand\familydefault{\sfdefault}
+
+% Adjust margins
+\usepackage[margin=0.3in]{geometry}
+%\addtolength{\oddsidemargin}{-0.7in}
+%\addtolength{\textwidth}{1.5in}
+%\addtolength{\topmargin}{-.5in}
+%\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\bfseries\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\educationSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} $\vert$  #2 & {\small #4}  \\
+      {\small#3}  \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & {\small #4}\\
+        #2 $\vert$ {\small#3}   \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+
+\newcommand{\resumeSubItem}[3]{\resumeItem{#1}{#2}{#3}\vspace{2pt}}
+
+%\renewcommand{\labelitemii}{}
+
+\renewcommand{\labelitemi}{}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING-----------------
+\begin{center}
+  {\Huge How to quick fix wifi} 
+\end{center}
+
+Things to try:
+
+1. Go to 192.168.1.123:5000/network. The top of the graph is the most recent status of different wifi devices. Dark red is bad, but anything else is ok.If the column that says 'coastsideWAN' is dark red at the top, go to number three. If it's not dark red, go to step two. \par
+
+2. So 'coastsideWAN' is not dark red. Send my a screenshot of the graph and I'll talk you through it. \par
+
+3. Try the 'twisted-satellite' wifi. If that doesn't work, go to step four.
+
+4. On the graph, if 'coastsideWAN' is dark red at the top, find the mess of wires in the construction area. Take the cable with blue tape out of the port it is in. Take the cable with black tape out of where it is, and plug it into the port where the blue taped cable was plugged in. Wait a few minutes then try to go on the normal wifi. If this doesn't work, go to step five.
+
+5. Unplug the power to the box that says 'Viasat', then plug it back in and wait for the circle light to be blue. Try to see if the internet works.
+
+6. If it still doesn't work, open the laptop by the mess of cables. Username: twisted, password: twisted. Plug in the cable with black tape to the computer ethernet port (on left side). Go to the wifi/internet option on lower right side of screen, and pick the option at the top. If you get internet, just use that for now and call me. If there's no internet there, then we have problems!
+
+\end{document}

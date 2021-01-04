@@ -1,7 +1,7 @@
 import zmq 
 import sys 
 import time
-import controller 
+import controller as c 
 import pickle
 from datetime import datetime
 
@@ -19,27 +19,8 @@ print("Connecting to server...")
 client = context.socket(zmq.REQ)
 client.connect(SERVER_ENDPOINT)
 
-creekLogger = controller.CreekLogger()
-
-def control(lowAgCommand,medAgCommand):
-    if lowAgCommand == "on":
-        controller.cycleLowAg()
-
-    elif lowAgCommand == "off":
-        controller.lowAgOff()
-
-    if medAgCommand == "on":
-        controller.cycleMedAg()
-
-    elif medAgCommand == "off":
-        controller.medAgOff()
-        
 while True:
-    if creekLogger.decideCreekLowLog():
-        creekLowTime = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    else:
-        creekLowTime = None
-    keyAndData = { 'key': 'creekpi', 'data': {'creekLowTime': creekLowTime} }
+    keyAndData = { 'key': 'cooppi', 'data': {'ID': c.read()} }
     pickledKeyAndData = pickle.dumps(keyAndData)
     client.send(pickledKeyAndData)
 

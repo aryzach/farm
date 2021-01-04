@@ -1,0 +1,24 @@
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
+before tmux start
+after tmux start
+before tmux run program
+after tmux run program
