@@ -7,6 +7,8 @@ from wtforms import SubmitField
 import pickle
 from .tools import ping, timeTools
 import os
+from collections import OrderedDict
+
 
 import matplotlib.pyplot as plt 
 import numpy as np 
@@ -106,14 +108,28 @@ def generatePingPlot():
     TIMEPOINTS = 100
 
     with open(PINGFILE,'r') as f:
-        jlines = json.load(f)
+        allInfo = json.load(f)
 
-    times = (list(jlines.keys()))[-TIMEPOINTS:]
+    sortedAllInfo = OrderedDict(sorted(allInfo.items(),reverse=True))
+
+    #times = (list(jlines.keys()))[-TIMEPOINTS:]
+    times = (list(sortedAllInfo.keys()))
     showTimes = times[1::TIMESPACING]
 
-    destinations = list(jlines[times[-1]].keys())
+    #sortedDestinations = list(jlines[times[-1]].keys()).sort()
+    #destinations = list(jlines[times[-1]].keys())
+    #for each time segment, this is the results dict where each is unsorted 
+    resultsDicts = list(sortedAllInfo.values())
 
-    latencies = list(map(lambda x: list((jlines[x]).values()), jlines))[-TIMEPOINTS:]
+    #now each of those is sorted by destination (all are OrderDicts)
+    sortedResultsDicts = list(map(lambda x: OrderedDict(sorted(x.items())), resultsDicts))
+
+    #sorted destinations from most recent results
+    destinations = list(list(map(lambda x: x.keys(),sortedResultsDicts))[-1])
+    latencies = list(list(map(lambda x: list(x.values()),sortedResultsDicts)))
+
+    #latencies = list(map(lambda x: list((jlines[x]).values()), jlines))[-TIMEPOINTS:]
+    #latencies = list(map(lambda x: list((OrderedDict(sorted(jlines[x].items()))).values()), jlines))[-TIMEPOINTS:]
 
     fig = plt.figure(figsize=(21,11),tight_layout=True)  
     ax = fig.add_subplot(111) #
@@ -123,6 +139,7 @@ def generatePingPlot():
     plt.yticks(list(map(lambda x:x*TIMESPACING,list(range(len(showTimes))))), showTimes, rotation='horizontal',size='small')
     plt.colorbar()
     return plt
+
 
 @app.route('/testspeed', methods=['GET'])
 def testspeed():

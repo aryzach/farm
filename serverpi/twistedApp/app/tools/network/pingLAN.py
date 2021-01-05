@@ -1,12 +1,12 @@
 import toolz
 import time
 from pythonping import ping
-from time import gmtime, strftime, localtime
 import re
 import json
 from pathlib import Path
 import os
 import netifaces as ni
+from pyunifi.controller import Controller
 
 # frequency of pings in seconds
 FREQUENCY = 60*10 
@@ -23,22 +23,23 @@ def getWLAN1_IP():
 
 IPprefix = '192.168.1.'
 
-wan = {'coastsideWAN':'8.8.8.8'}
-wan2 = {'satelliteWAN': '8.8.8.8'}
+wan = {'WAN coastside':'8.8.8.8'}
+wan2 = {'WAN satellite': '8.8.8.8'}
         
 
-cameras = toolz.valmap(lambda x : IPprefix + x, {
-        'acorn cam':'237',
-        'CSA cam':'235',
-        'Farm Store cam':'229',
-        'front gate cam':'234',
-        'goat outdoor cam':'236',
-        'coop indoor cam':'40',
-        'coop outdoor cam':'42',
-        'office cam':'48',
-        'property cam':'218'
-        })
+cameras = toolz.keymap(lambda x : 'cam ' + x, (toolz.valmap(lambda x : IPprefix + x, {
+        'acorn':'237',
+        'CSA':'235',
+        'Farm Store':'229',
+        'front gate':'234',
+        'goat outdoor':'236',
+        'coop indoor':'40',
+        'coop outdoor':'42',
+        'office':'48',
+        'property':'218'
+        })))
 
+'''
 lan = toolz.valmap(lambda x : IPprefix + x, {
         'security gateway':'1',
         'barn switch':'177',
@@ -59,28 +60,39 @@ lan = toolz.valmap(lambda x : IPprefix + x, {
         'guest house':'19',
         'office':'158',
         'top of hill':'16',
-        'water tank':'18',
-        'farmhouse NB':'21',
-        'top of hill NB':'22',
-        'reciever in barn NB':'23',
-        'front gate NB':'24',
-        'csa gate NB':'25',
-        'hill to water tank NB':'26',
-        'water tanks NB':'27',
-        'coops NB':'29',
-        'barn to creek NB':'30',
-        'creek NB':'31',
-        'water tank to coastside NB':'33',
-        'coastside NB':'34'
+        'water tank':'18'
         })
+'''
 
-destinations = {**lan,**wan,**wan2,**cameras}
-print(destinations)
+nb = toolz.keymap(lambda x : 'NB ' + x, (toolz.valmap(lambda x : IPprefix + x, {
+        'farmhouse':'21',
+        'top of hill':'22',
+        'reciever in barn':'23',
+        'front gate':'24',
+        'csa gate':'25',
+        'hill to water tank':'26',
+        'water tanks':'27',
+        'coops':'29',
+        'barn to creek':'30',
+        'creek':'31',
+        'water tank to coastside':'33',
+        'coastside':'34'
+        })))
 
+
+def getLAN():
+    c = Controller('192.168.1.44', 'twistedfields', '=9M8R+M7i',ssl_verify=False)
+    lan = {}
+    for ap in c.get_aps():
+        lan['AP ' + ap.get('name')] = ap['ip']
+    return lan
+
+lan = getLAN()
+
+destinations = {**wan,**wan2,**lan,**cameras,**nb}
 
 
 while True:
-    currentTime = strftime("%Y-%m-%d %H:%M:%S", localtime())
     results = {}
     for destination in destinations:
         try:
@@ -94,7 +106,7 @@ while True:
         if result != 2000:
             result = result.rtt_avg_ms
         results[destination] = result 
-        entry = {currentTime : results}
+    entry = {time.time() : results}
     if Path(PINGFILE).exists():
         with open(PINGFILE) as f:
             allData = json.load(f)
