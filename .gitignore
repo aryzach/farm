@@ -1,7 +1,10 @@
 ./valves/valvesBackend/app/tools/password.py
+./serverpi/twistedApp/app/tools/network/config.py
 password.txt
 rfid_bobbin
 intern.txt
 interns.txt
 internNew.txt
 negotiate.txt
+negotiate2.txt
+triad

@@ -1,74 +1,19 @@
-#include <SPI.h>
-#include <ESP8266WiFi.h>        // Include the Wi-Fi library
-#include <ESP8266WiFiMulti.h>   // Include the Wi-Fi-Multi library
-#include <ArduinoMqttClient.h>
-#if defined(ARDUINO_SAMD_MKRWIFI1010) || defined(ARDUINO_SAMD_NANO_33_IOT) || defined(ARDUINO_AVR_UNO_WIFI_REV2)
-  #include <WiFiNINA.h>
-#elif defined(ARDUINO_SAMD_MKR1000)
-  #include <WiFi101.h>
-#elif defined(ARDUINO_ESP8266_ESP12)
-  #include <ESP8266WiFi.h>
-#endif
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
-// test globals
-int LED_SONOFF = 0;
-int BLINK_DURATION = 3000;
-int cool = 1;
-void setupPins();
-void testPins();
+// Connect to the WiFi
+const char* ssid = "twistedfields";
+const char* password = "alwaysbekind";
 
+const char* mqttServer = "192.168.1.123";
+const int mqttPort = 1883;
+ 
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-// wifi globals
-ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-
-// mqtt globals
-WiFiClient wifiClient;
-MqttClient mqttClient(wifiClient);
-
-const char broker[] = "192.168.1.123";
-int        port     = 1883;
-const char topic[]  = "test";
-
-
-void setup() {
-  Serial.begin(115200);         // Start the Serial communication to send messages to the computer
-  delay(10);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only  
-  }
-  Serial.println("enter setup");
-
-  //delay(10000); // delay 10 seconds to find wifi
-  Serial.println("enter wifi setup");
-  wifiSetup();
-  Serial.println("end wifi setup");
-
-  Serial.println("enter mqtt setup");
-  mqttSetup();
-  Serial.println("end mqtt setup");
-
-  Serial.println("enter pin setup");
-  setupPins(); 
-  Serial.println("end pin setup");
-
-}
-  
-void loop() {
-  Serial.println("start loop");
-  testGPIO(12);
-  mqttLoop();
-}
-
-// the loop function runs over and over again forever
-void testGPIO(int gpio) {
-  Serial.println(gpio);
-  Serial.println("start relay");
-  digitalWrite(gpio, HIGH);
-  delay(BLINK_DURATION);  
-  Serial.println("pin low");
-  digitalWrite(gpio, LOW);
-  delay(BLINK_DURATION); 
-}
+const int RELAY = 12;
+const int LED = 13;
+const char* NAME = "valve5";
 
 void setupPins() {
   for(int i = 12; i < 15; i++)
@@ -76,102 +21,106 @@ void setupPins() {
           Serial.println("setting up: ");
           Serial.println(i);
           pinMode(i, OUTPUT);
-
       }
 }
 
-void testPins() {
-  for(int i = 12; i < 15; i++)
-      {
-          Serial.println("testing: ");
-          Serial.println(i);
-          testGPIO(i);
+ 
+void setup() {
 
-      }
+  setupPins();
+ 
+  Serial.begin(9600);
+ 
+  WiFi.begin(ssid, password);
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi..");
   }
-
-
-
-
-void mqttSetup() {
-  mqttClient.setId("clientId");
-
-  // You can provide a username and password for authentication
-  // mqttClient.setUsernamePassword("username", "password");
-
-  Serial.println("Attempting to connect to the MQTT broker: ");
-  Serial.println(broker);
-
-  if (!mqttClient.connect(broker, port)) {
-    Serial.println("MQTT connection failed! Error code = ");
-    Serial.println(mqttClient.connectError());
-
-    while (1);
+  Serial.println("Connected to the WiFi network");
+ 
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+ 
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+ 
+    if (client.connect(NAME)) {
+ 
+      Serial.println("connected");  
+ 
+    } else {
+ 
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+ 
+    }
   }
+ 
+  client.subscribe(NAME);
+ 
+} 
 
-  Serial.println("You're connected to the MQTT broker!");
-  Serial.println();
+int callback(char* topic, byte* payload, unsigned int length) {
 
-  Serial.print("Subscribing to topic: ");
+  Serial.print("Message arrived in topic: ");
   Serial.println(topic);
-  Serial.println();
 
-  // subscribe to a topic
-  mqttClient.subscribe(topic);
-
-  // topics can be unsubscribed using:
-  // mqttClient.unsubscribe(topic);
-
-  Serial.print("Waiting for messages on topic: ");
-  Serial.println(topic);
-  Serial.println();
-}
-
-
-void wifiSetup() {
-  
-  wifiMulti.addAP("twistedfields", "alwaysbekind");   // add Wi-Fi networks you want to connect to
-  //wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
-  //wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
-
-  Serial.println("Connecting ...");
-  int i = 0;
-  while (wifiMulti.run() != WL_CONNECTED) { // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
+  Serial.print("Message:");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println("payload 0");
+  Serial.println((char)payload[0]);
+  Serial.println((char)payload[0] == '1');
+  if ((char)payload[0] == '1') {
+    Serial.println("yeah");
+    digitalWrite(RELAY, HIGH);
     delay(1000);
-    Serial.print('.');
+    digitalWrite(LED, LOW);
+    delay(1000);
+  } else {
+    Serial.println("no");
+    digitalWrite(RELAY, LOW);
+    delay(1000);
+    digitalWrite(LED, HIGH);
+    delay(1000);
   }
-  Serial.println('\n');
-  Serial.print("Connected to ");
-  delay(10);
-  Serial.println(WiFi.SSID());              // Tell us what network we're connected to
-  Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());           // Send the IP address of the ESP8266 to the computer
+   
+  
+
+  Serial.println();
+  Serial.println("-----------------------");
+
 }
 
-
-int readPins() {
-  // read the analog sensor:
-  int sensorReading = analogRead(A0);   
-  return sensorReading;
+void reconnect() {
+  while (!client.connected()) {
+   Serial.print("Attempting MQTT connection...");
+   // Create a random client ID
+   String clientId = "ESP8266Client-";
+   clientId += String(random(0xffff), HEX);
+   // Attempt to connect
+   if (client.connect(clientId.c_str())) {
+     Serial.println("connected");
+     // Once connected, publish an announcement...
+     //client.publish("server", "reconnected");
+     // ... and resubscribe
+     client.subscribe(NAME);
+   } else {
+     Serial.print("failed, rc=");
+     Serial.print(client.state());
+     Serial.println(" try again in 5 seconds");
+     // Wait 5 seconds before retrying
+     delay(5000);
+   }
+  }
 }
 
-void mqttLoop() {
-  int messageSize = mqttClient.parseMessage();
-  if (messageSize) {
-    // we received a message, print out the topic and contents
-    Serial.print("Received a message with topic '");
-    Serial.print(mqttClient.messageTopic());
-    Serial.print("', length ");
-    Serial.print(messageSize);
-    Serial.println(" bytes:");
-
-    // use the Stream interface to print the contents
-    while (mqttClient.available()) {
-      Serial.print((char)mqttClient.read());
-    }
-    Serial.println();
-
-    Serial.println();
-    }
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
 }
-

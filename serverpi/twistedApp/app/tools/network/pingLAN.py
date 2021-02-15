@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import netifaces as ni
 from pyunifi.controller import Controller
+import config 
 
 # frequency of pings in seconds
 FREQUENCY = 60*10 
@@ -36,7 +37,9 @@ cameras = toolz.keymap(lambda x : 'cam ' + x, (toolz.valmap(lambda x : IPprefix 
         'coop indoor':'40',
         'coop outdoor':'42',
         'office':'48',
-        'property':'218'
+        'property':'126',
+        'Chick Big Hutch':'137',
+        'Creek':'130'
         })))
 
 '''
@@ -71,23 +74,32 @@ nb = toolz.keymap(lambda x : 'NB ' + x, (toolz.valmap(lambda x : IPprefix + x, {
         'front gate':'24',
         'csa gate':'25',
         'hill to water tank':'26',
-        'water tanks':'27',
+        'barn to office':'27',
+        'office':'28',
         'coops':'29',
         'barn to creek':'30',
         'creek':'31',
-        'water tank to coastside':'33',
-        'coastside':'34'
+        'coastside':'32',
+        'water tank':'33',
+        'water tank to coastside':'34'
         })))
 
 
 def getLAN():
-    c = Controller('192.168.1.44', 'twistedfields', '=9M8R+M7i',ssl_verify=False)
+    c = Controller('192.168.1.44', 'twistedfields', config.PASSWORD,ssl_verify=False)
     lan = {}
-    for ap in c.get_aps():
-        lan['AP ' + ap.get('name')] = ap['ip']
+    aps = c.get_aps()
+    for ap in aps:
+        try:
+            name = ap.get('name')
+        except:
+            name = 'no name'
+        ip = ap['ip']
+        lan['AP ' + name] = ip
     return lan
 
 lan = getLAN()
+
 
 destinations = {**wan,**wan2,**lan,**cameras,**nb}
 
