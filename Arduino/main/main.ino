@@ -3,6 +3,7 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
+
 const int API_TIMEOUT = 10000;  //keep it long if you want to receive headers from client
 
 
@@ -15,12 +16,11 @@ const char* mqttServer = "192.168.1.123";
 const int mqttPort = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
+//int callback(char* topic, byte* payload, unsigned int length); 
 
 // OTA
-const char* host = "raw.githubusercontent.com";
-const int httpsPort = 443;
-BearSSL::WiFiClientSecure otaClient;
-
+HTTPClient httpClient;
+const int FW_VERSION = 1;
 
 // hardware pins
 const int RELAY = 12;
@@ -38,7 +38,13 @@ void setupPins() {
       }
 }
 
-void setupWifiMQTT() {
+
+void setup() {
+
+  setupPins();
+ 
+  Serial.begin(9600);
+
   // Wifi
   WiFi.begin(ssid, password);
  
@@ -60,63 +66,47 @@ void setupWifiMQTT() {
       Serial.println("connected");  
  
     } else {
- 
       Serial.print("failed with state ");
       Serial.print(client.state());
       delay(2000);
- 
     }
+   }
  
-}
-
-void setup() {
-
-  setupPins();
- 
-  Serial.begin(9600);
-
-  setupWifiMQTT();
-
-  otaClient.setInsecure(); //the magic line, use with caution
-  //otaClient.setTimeout(API_TIMEOUT);
 } 
 
 void checkForUpdates() {
 
- if (!otaClient.connect(host, httpsPort)) {
-    Serial.println("OTA connection failed");
-    return;
-  }
-  Serial.println("3");
+  // get version
+  Serial.println("begin check");
+  httpClient.begin("http://192.168.1.123/t.version");
+  Serial.println("after httpClient.begin");
 
-  String url = "/aryzach/OTA/main/20401c592040.version";
-  Serial.print("Requesting URL: ");
-  Serial.println(url);
-  otaClient.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: BuildFailureDetectorESP8266\r\n" +
-               "Connection: close\r\n\r\n");
+  int httpCode = httpClient.GET();
+  Serial.println("GET");
+  Serial.println(httpCode);
 
-  Serial.println("Request sent");
-  while (otaClient.connected()) {
-    String line = otaClient.readStringUntil('\n');
-    if (line == "\r") {
-      Serial.println("Headers received");
-      break;
-    }
-  }
-  String line = otaClient.readStringUntil('\n');
-  if (line.startsWith("{\"state\":\"success\"")) {
-    Serial.println("esp8266/Arduino CI successfull!");
-  } else {
-    Serial.println("esp8266/Arduino CI has failed");
-  }
-  Serial.println("Reply was:");
-  Serial.println("==========");
-  Serial.println(line);
-  Serial.println("==========");
-  Serial.println("Closing connection");
-  otaClient.stop();
+  if( httpCode == 200 ) {
+    Serial.println("200");
+    String newFWVersion = httpClient.getString();
+    Serial.print("version on server: ");
+    Serial.print(newFWVersion);
+    int newVersion = newFWVersion.toInt();
+
+    if( newVersion > FW_VERSION ) {
+      Serial.println( "Preparing to update" );
+      // get binary
+      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/t.bin");  
+      switch(ret) {
+        case HTTP_UPDATE_FAILED:
+          Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+          break;
+
+        case HTTP_UPDATE_NO_UPDATES:
+          Serial.println("HTTP_UPDATE_NO_UPDATES");
+          break;
+       }
+     }
+   }
 }
 
 String getMAC()
@@ -148,28 +138,8 @@ int callback(char* topic, byte* payload, unsigned int length) {
   } else {
     Serial.println("no");
     digitalWrite(RELAY, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
     digitalWrite(LED, HIGH);
   }
-   
-  
-
   Serial.println();
   Serial.println("-----------------------");
 

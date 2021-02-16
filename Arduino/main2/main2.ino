@@ -3,22 +3,30 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
-// Connect to the WiFi
+
+const int API_TIMEOUT = 10000;  //keep it long if you want to receive headers from client
+
+
+// WiFi
 const char* ssid = "twistedfields";
 const char* password = "alwaysbekind";
 
+// MQTT
 const char* mqttServer = "192.168.1.123";
 const int mqttPort = 1883;
- 
 WiFiClient espClient;
 PubSubClient client(espClient);
+//int callback(char* topic, byte* payload, unsigned int length); 
 
 // OTA
-const int FW_VERSION = 0;
-const char* fwUrlBase = "https://raw.githubusercontent.com/aryzach/OTA/main/";
+HTTPClient httpClient;
+const int FW_VERSION = 2;
 
+// hardware pins
 const int RELAY = 12;
 const int LED = 13;
+
+
 const char* NAME = "valve1";
 
 void setupPins() {
@@ -30,13 +38,14 @@ void setupPins() {
       }
 }
 
- 
+
 void setup() {
 
   setupPins();
  
   Serial.begin(9600);
- 
+
+  // Wifi
   WiFi.begin(ssid, password);
  
   while (WiFi.status() != WL_CONNECTED) {
@@ -44,7 +53,8 @@ void setup() {
     Serial.println("Connecting to WiFi..");
   }
   Serial.println("Connected to the WiFi network");
- 
+
+  // MQTT
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
  
@@ -56,51 +66,36 @@ void setup() {
       Serial.println("connected");  
  
     } else {
- 
       Serial.print("failed with state ");
       Serial.print(client.state());
       delay(2000);
- 
     }
-  }
+   }
  
-  client.subscribe(NAME);
-
 } 
 
 void checkForUpdates() {
-  String mac = getMAC();
-  String fwURL = String( fwUrlBase );
-  fwURL.concat( mac );
-  String fwVersionURL = fwURL;
-  fwVersionURL.concat( ".version" );
 
-  Serial.println( "Checking for firmware updates." );
-  Serial.print( "MAC address: " );
-  Serial.println( mac );
-  Serial.print( "Firmware version URL: " );
-  Serial.println( fwVersionURL );
+  // get version
+  Serial.println("begin check");
+  httpClient.begin("http://192.168.1.123/t.version");
+  Serial.println("after httpClient.begin");
 
-  HTTPClient httpClient;
-  httpClient.begin( fwVersionURL );
   int httpCode = httpClient.GET();
+  Serial.println("GET");
+  Serial.println(httpCode);
+
   if( httpCode == 200 ) {
+    Serial.println("200");
     String newFWVersion = httpClient.getString();
-
-    Serial.print( "Current firmware version: " );
-    Serial.println( FW_VERSION );
-    Serial.print( "Available firmware version: " );
-    Serial.println( newFWVersion );
-
+    Serial.print("version on server: ");
+    Serial.print(newFWVersion);
     int newVersion = newFWVersion.toInt();
 
     if( newVersion > FW_VERSION ) {
       Serial.println( "Preparing to update" );
-
-      String fwImageURL = fwURL;
-      fwImageURL.concat( ".bin" );
-      t_httpUpdate_return ret = ESPhttpUpdate.update( fwImageURL );
-
+      // get binary
+      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/t.bin");  
       switch(ret) {
         case HTTP_UPDATE_FAILED:
           Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
@@ -109,17 +104,9 @@ void checkForUpdates() {
         case HTTP_UPDATE_NO_UPDATES:
           Serial.println("HTTP_UPDATE_NO_UPDATES");
           break;
-      }
-    }
-    else {
-      Serial.println( "Already on latest version" );
-    }
-  }
-  else {
-    Serial.print( "Firmware version check failed, got HTTP response code " );
-    Serial.println( httpCode );
-  }
-  httpClient.end();
+       }
+     }
+   }
 }
 
 String getMAC()
@@ -151,28 +138,8 @@ int callback(char* topic, byte* payload, unsigned int length) {
   } else {
     Serial.println("no");
     digitalWrite(RELAY, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
-    digitalWrite(LED, HIGH);
-    delay(200);
-    digitalWrite(LED, LOW);
-    delay(200);
     digitalWrite(LED, HIGH);
   }
-   
-  
-
   Serial.println();
   Serial.println("-----------------------");
 
@@ -207,4 +174,15 @@ void loop() {
   }
   client.loop();
   checkForUpdates();
+  digitalWrite(LED, HIGH);
+  delay(300);
+  digitalWrite(LED, LOW);
+  delay(300);
+  digitalWrite(LED, HIGH);
+  delay(300);
+  digitalWrite(LED, LOW);
+  delay(300);
+  digitalWrite(LED, HIGH);
+  delay(300);
+  digitalWrite(LED, LOW);
 }
