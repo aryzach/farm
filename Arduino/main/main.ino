@@ -1,19 +1,33 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
 
-// Connect to the WiFi
+const int API_TIMEOUT = 10000;  //keep it long if you want to receive headers from client
+
+
+// WiFi
 const char* ssid = "twistedfields";
 const char* password = "alwaysbekind";
 
+// MQTT
 const char* mqttServer = "192.168.1.123";
 const int mqttPort = 1883;
- 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+// OTA
+const char* host = "raw.githubusercontent.com";
+const int httpsPort = 443;
+BearSSL::WiFiClientSecure otaClient;
+
+
+// hardware pins
 const int RELAY = 12;
 const int LED = 13;
-const char* NAME = "valve5";
+
+
+const char* NAME = "valve1";
 
 void setupPins() {
   for(int i = 12; i < 15; i++)
@@ -24,13 +38,8 @@ void setupPins() {
       }
 }
 
- 
-void setup() {
-
-  setupPins();
- 
-  Serial.begin(9600);
- 
+void setupWifiMQTT() {
+  // Wifi
   WiFi.begin(ssid, password);
  
   while (WiFi.status() != WL_CONNECTED) {
@@ -38,7 +47,8 @@ void setup() {
     Serial.println("Connecting to WiFi..");
   }
   Serial.println("Connected to the WiFi network");
- 
+
+  // MQTT
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
  
@@ -56,11 +66,68 @@ void setup() {
       delay(2000);
  
     }
-  }
  
-  client.subscribe(NAME);
+}
+
+void setup() {
+
+  setupPins();
  
+  Serial.begin(9600);
+
+  setupWifiMQTT();
+
+  otaClient.setInsecure(); //the magic line, use with caution
+  //otaClient.setTimeout(API_TIMEOUT);
 } 
+
+void checkForUpdates() {
+
+ if (!otaClient.connect(host, httpsPort)) {
+    Serial.println("OTA connection failed");
+    return;
+  }
+  Serial.println("3");
+
+  String url = "/aryzach/OTA/main/20401c592040.version";
+  Serial.print("Requesting URL: ");
+  Serial.println(url);
+  otaClient.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
+
+  Serial.println("Request sent");
+  while (otaClient.connected()) {
+    String line = otaClient.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Headers received");
+      break;
+    }
+  }
+  String line = otaClient.readStringUntil('\n');
+  if (line.startsWith("{\"state\":\"success\"")) {
+    Serial.println("esp8266/Arduino CI successfull!");
+  } else {
+    Serial.println("esp8266/Arduino CI has failed");
+  }
+  Serial.println("Reply was:");
+  Serial.println("==========");
+  Serial.println(line);
+  Serial.println("==========");
+  Serial.println("Closing connection");
+  otaClient.stop();
+}
+
+String getMAC()
+{
+  uint8_t mac[6];
+  char result[14];
+
+ snprintf( result, sizeof( result ), "%02x%02x%02x%02x%02x%02x", mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ] );
+
+  return String( result );
+}
 
 int callback(char* topic, byte* payload, unsigned int length) {
 
@@ -77,15 +144,28 @@ int callback(char* topic, byte* payload, unsigned int length) {
   if ((char)payload[0] == '1') {
     Serial.println("yeah");
     digitalWrite(RELAY, HIGH);
-    delay(1000);
     digitalWrite(LED, LOW);
-    delay(1000);
   } else {
     Serial.println("no");
     digitalWrite(RELAY, LOW);
-    delay(1000);
+    delay(200);
     digitalWrite(LED, HIGH);
-    delay(1000);
+    delay(200);
+    digitalWrite(LED, LOW);
+    delay(200);
+    digitalWrite(LED, HIGH);
+    delay(200);
+    digitalWrite(LED, LOW);
+    delay(200);
+    digitalWrite(LED, HIGH);
+    delay(200);
+    digitalWrite(LED, LOW);
+    delay(200);
+    digitalWrite(LED, HIGH);
+    delay(200);
+    digitalWrite(LED, LOW);
+    delay(200);
+    digitalWrite(LED, HIGH);
   }
    
   
@@ -123,4 +203,5 @@ void loop() {
     reconnect();
   }
   client.loop();
+  checkForUpdates();
 }

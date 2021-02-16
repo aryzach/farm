@@ -1,6 +1,9 @@
 compile/verify and upload
 amake -u 8266 valveMain/valveMain.ino /dev/ttyUSB0 
 
+just compile to bin
+~/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 valveMain/valveMain.ino --output-dir ./
+
 view serial output
 amake -s /dev/ttyUSB0 115200 
 
