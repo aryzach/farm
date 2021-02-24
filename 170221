@@ -1,0 +1,19 @@
+progress update / forecast
+
+RFID
+was getting data, but it's bad. Taylor is going to try to get the module working, then I'm going to run with the rest. If ordered, antenna should be here in a few weeks
+
+Valves
+in a good place. Still need to stress test server and controller code.
+Unforseen things: many devices on the network (create new network?), code handling many devices, getting sensor data
+need to differentiate between devices (MAC address or by name)
+TODO: 
+mac address / name pairing for control
+stress test MQTT and OTA server with many relays
+
+
+Network
+Satellite wifi not staying up, should I work on that?
+
+weatherstations
+

@@ -4,9 +4,6 @@
 #include <ESP8266httpUpdate.h>
 
 
-const int API_TIMEOUT = 10000;  //keep it long if you want to receive headers from client
-
-
 // WiFi
 const char* ssid = "twistedfields";
 const char* password = "alwaysbekind";
@@ -16,7 +13,6 @@ const char* mqttServer = "192.168.1.123";
 const int mqttPort = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
-//int callback(char* topic, byte* payload, unsigned int length); 
 
 // OTA
 HTTPClient httpClient;
@@ -27,7 +23,7 @@ const int RELAY = 12;
 const int LED = 13;
 
 
-const char* NAME = "valve1";
+const char* NAME = "valve3";
 
 void setupPins() {
   for(int i = 12; i < 15; i++)
@@ -43,7 +39,7 @@ void setup() {
 
   setupPins();
  
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Wifi
   WiFi.begin(ssid, password);
@@ -64,6 +60,8 @@ void setup() {
     if (client.connect(NAME)) {
  
       Serial.println("connected");  
+      client.subscribe(NAME);
+      Serial.println("subscribed");  
  
     } else {
       Serial.print("failed with state ");
@@ -172,17 +170,7 @@ void loop() {
   if (!client.connected()) {
     reconnect();
   }
+  delay(800);
   client.loop();
   checkForUpdates();
-  digitalWrite(LED, HIGH);
-  delay(300);
-  digitalWrite(LED, LOW);
-  delay(300);
-  digitalWrite(LED, HIGH);
-  delay(300);
-  digitalWrite(LED, LOW);
-  delay(300);
-  digitalWrite(LED, HIGH);
-  delay(300);
-  digitalWrite(LED, LOW);
 }

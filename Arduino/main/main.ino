@@ -2,10 +2,21 @@
 #include <PubSubClient.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
+#include <ArduinoJson.h>
 
+// MQTT message will be in form JSON format 
 
-const int API_TIMEOUT = 10000;  //keep it long if you want to receive headers from client
+// need parsing function to parse MQTT message
+// Parse incoming JSON string
+// iterate through parsed message
 
+// parse JSON MQTT message
+StaticJsonDocument<200> doc;
+
+// function frequencies
+const int LOOP_DELAY = 1000;
+const int UPDATE_FREQ = 60 * 10; // 60 second * 10 * LOOP_DELAY : once every ten minutes 
+int updateCounter = 0;
 
 // WiFi
 const char* ssid = "twistedfields";
@@ -16,7 +27,6 @@ const char* mqttServer = "192.168.1.123";
 const int mqttPort = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
-//int callback(char* topic, byte* payload, unsigned int length); 
 
 // OTA
 HTTPClient httpClient;
@@ -26,8 +36,20 @@ const int FW_VERSION = 1;
 const int RELAY = 12;
 const int LED = 13;
 
+char* ID;
+String MAC;
 
-const char* NAME = "valve1";
+struct entry
+ {
+     String MAC;
+     char* ID;
+ };
+
+entry entries[] = {
+    { "C8:2B:96:4F:DC:A6", "p00d00"   },
+    { "testMAC"          , "testID" }
+};
+
 
 void setupPins() {
   for(int i = 12; i < 15; i++)
@@ -43,7 +65,7 @@ void setup() {
 
   setupPins();
  
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Wifi
   WiFi.begin(ssid, password);
@@ -54,6 +76,17 @@ void setup() {
   }
   Serial.println("Connected to the WiFi network");
 
+  // set MAC
+  MAC = WiFi.macAddress();
+
+  // set ID
+  for (int i = 0; i <= sizeof(entries); i++) {
+    if (entries[i].MAC == MAC) { 
+      ID = entries[i].ID;
+    }
+  }
+  Serial.println(ID);
+
   // MQTT
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
@@ -61,9 +94,11 @@ void setup() {
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
  
-    if (client.connect(NAME)) {
+    if (client.connect("valves")) {
  
       Serial.println("connected");  
+      client.subscribe("valves");
+      Serial.println("subscribed");  
  
     } else {
       Serial.print("failed with state ");
@@ -77,13 +112,9 @@ void setup() {
 void checkForUpdates() {
 
   // get version
-  Serial.println("begin check");
+  Serial.println("checking for version update");
   httpClient.begin("http://192.168.1.123/t.version");
-  Serial.println("after httpClient.begin");
-
   int httpCode = httpClient.GET();
-  Serial.println("GET");
-  Serial.println(httpCode);
 
   if( httpCode == 200 ) {
     Serial.println("200");
@@ -95,7 +126,7 @@ void checkForUpdates() {
     if( newVersion > FW_VERSION ) {
       Serial.println( "Preparing to update" );
       // get binary
-      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/t.bin");  
+      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/newVersion.bin");  
       switch(ret) {
         case HTTP_UPDATE_FAILED:
           Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
@@ -109,18 +140,36 @@ void checkForUpdates() {
    }
 }
 
-String getMAC()
-{
-  uint8_t mac[6];
-  char result[14];
-
- snprintf( result, sizeof( result ), "%02x%02x%02x%02x%02x%02x", mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ] );
-
-  return String( result );
-}
-
 int callback(char* topic, byte* payload, unsigned int length) {
+  payload[length] = '\0';
+  //char json[] = "{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
 
+  // Deserialize the JSON document
+  DeserializationError error = deserializeJson(doc, payload);
+
+  // Test if parsing succeeds.
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return 1;
+  }
+ 
+  const String command = doc[ID];
+  Serial.print("command: ");
+  Serial.println(command);
+  if (command == "on") {
+    Serial.println("command is on");
+    digitalWrite(RELAY, HIGH);
+    digitalWrite(LED, LOW);
+  } else {
+    Serial.println("command is NOT on");
+    digitalWrite(RELAY, LOW);
+    digitalWrite(LED, HIGH);
+  }
+
+
+///------
+/*
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
 
@@ -142,7 +191,7 @@ int callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
   Serial.println("-----------------------");
-
+*/
 }
 
 void reconnect() {
@@ -157,7 +206,7 @@ void reconnect() {
      // Once connected, publish an announcement...
      //client.publish("server", "reconnected");
      // ... and resubscribe
-     client.subscribe(NAME);
+     client.subscribe("valves");
    } else {
      Serial.print("failed, rc=");
      Serial.print(client.state());
@@ -168,10 +217,38 @@ void reconnect() {
   }
 }
 
+String getMAC()
+{
+  uint8_t mac[6];
+  char result[14];
+
+ snprintf( result, sizeof( result ), "%02x%02x%02x%02x%02x%02x", mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ] );
+ Serial.println("getMAC():");
+ Serial.println(String(result));
+ Serial.println("------------");
+ Serial.println(WiFi.macAddress());
+
+  return String( result );
+}
+
+
+
 void loop() {
+
+
+  // MQTT
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
-  checkForUpdates();
+
+  // OTA
+  updateCounter = updateCounter + 1;
+  if (updateCounter == UPDATE_FREQ) {
+    checkForUpdates();
+    updateCounter = 0;
+  }
+  delay(1000);
+  getMAC();
+
 }

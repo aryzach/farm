@@ -1,0 +1,27 @@
+I'm building a system to more efficiently water rows of crops. Each crop row has a valve that I can control. The valves are supplied with water with a pump. If the pump is on, but not enough valves are open, we burst a pipe.
+
+My goal is to create a scheduler where we enter the amount of time we want each valve to get watered and the minimum number of valves that need to be open to avoid a burst pipe. The optimal schedule will be one where the pump has to run the least amount of time.
+
+Generalized, I'm looking for an algorithm that takes a number (minimum valves required to be open), and a list of time increments that represent how much time to leave each valve open in total. The output should be a matrix of 0 and 1 where the the columns represent different valves, and each row represents a time segment. The matrix should have as least rows as possible. 
+
+The domain of reasonable values for each parameter is:
+        Minimum valves on: 1 to 50 
+        Total number of valves with a non-zero time value: 1 - 300 
+        Time segment for each valve (likely 15 minute increments): 0 - 20
+
+So for example,
+   function(minValves=2,times=[1,2,3]) =
+        [ 
+          [ 1 , 0 , 1 ],
+          [ 0 , 1 , 1 ],
+          [ 0 , 1 , 1 ]
+        ]
+
+My current solution in psuesocode looks like this (parameters minOn and timesList):
+1. generate all possible matricies with entries 0 and 1 of size (sum timesList) x (length timesList)  
+2. filter list of matricies based on constrains
+    - column sums == timesList
+    - each row sum >= minOn
+3. return matrix with least number of rows    
+
+I suspect my first step is highly inefficient and is the inefficiency I want to prioritize removing, but I'm not sure how. I'm hoping that I'll be able to more effienctly construct possible schedules based off my constrained domain for each parameter. 

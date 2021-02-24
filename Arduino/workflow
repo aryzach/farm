@@ -1,13 +1,23 @@
 compile/verify and upload
-amake -u 8266 valveMain/valveMain.ino /dev/ttyUSB0 
+amake -u 8266 main/main.ino /dev/ttyUSB0 
 
 just compile to bin
 ~/arduino-cli compile --fqbn esp8266:esp8266:generic:xtal=80,vt=flash,exception=legacy,ssl=all,ResetMethod=nodemcu,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=1M64,led=2,sdk=nonosdk_190703,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200 main/main.ino --output-dir ./
-
-BOARD="esp8266:esp8266:generic:xtal=80,vt=flash,exception=legacy,ssl=all,ResetMethod=nodemcu,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=1M64,led=2,sdk=nonosdk_190703,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200"
 
 view serial output
 amake -s /dev/ttyUSB0 115200 
 
 or view serial here
 minicom -D /dev/ttyUSB0 -b 115200 
+
+
+how to new firmware OTA update
+in firmware: update FW_VERSION += 1
+with the file in it's own folder run (update main/main.ino to be new software folder/file name):
+        ~/arduino-cli compile --fqbn esp8266:esp8266:generic:xtal=80,vt=flash,exception=legacy,ssl=all,ResetMethod=nodemcu,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=1M64,led=2,sdk=nonosdk_190703,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200 main/main.ino --output-dir ./
+       
+this will create a file named -name-.ino.bin in pwd
+
+scp -name-.ino.bin pi@serverpi:ota/t.bin
+
+on pi: in ~/ota/t.version update number += 1

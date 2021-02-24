@@ -1,7 +1,7 @@
 from twistedApp import app
 from flask import render_template, flash, redirect, url_for, send_file
 from flask_redis import FlaskRedis
-from app.forms import PumpForm 
+from app.forms import PumpForm, ValveForm, ScheduleBuilder 
 from flask_wtf import FlaskForm
 from wtforms import SubmitField
 import pickle
@@ -39,7 +39,7 @@ pickledFullValue = pickle.dumps(fullValue)
 redis_client.set(key,pickledFullValue)
 
 #initialize database valves 
-valveList = list(map(lambda x : "valve" + str(x), [item for item in range(0,5)])) 
+valveList = list(map(lambda x : "valve" + str(x), [item for item in range(0,6)])) 
 key = 'valves'
 commandTupleList = []
 for valve in valveList:
@@ -166,7 +166,7 @@ def valves():
     commandTupleList = unpickled['command']
     data = unpickled['data']
 
-    form = valve_form(commandTupleList)
+    form = ValveForm(valvesState=commandTupleList)
 
     if form.validate_on_submit():
         for valveTpl in commandTupleList:
@@ -182,34 +182,17 @@ def valves():
     return render_template('valves.html', form=form, commandTupleList=commandTupleList)
  
 
-def valve_form(valvesState, **kwargs):
-    """Dynamically creates a driver's schedule form"""
+@app.route('/createWaterSchedule', methods=['GET','POST'])
+def createWaterSchedule():
+    form = ScheduleBuilder(valveList=valveList)
 
-    # First we create the base form
-    # Note that we are not adding any fields to it yet
-    class ValveForm(FlaskForm):
-        pass
+    if form.validate_on_submit():
+        for valve in valveList:
+            print(form[valve].data)
+        return redirect(url_for('createWaterSchedule'))
 
-    # Then we iterate over our ranges
-    # and create a select field for each
-    # item_{d}_{i} in the set, setting each field
-    # *on our **class**.
-    for valveTpl in valvesState:
-        valve = valveTpl[0]
-        state = valveTpl[1]
-        label = valve
-        if state == 'off':
-            field = SubmitField('Turn On')
-        else:
-            field = SubmitField('Turn Off')
-        setattr(ValveForm, label, field)
-
-    # Finally, we return the *instance* of the class
-    # We could also use a dictionary comprehension and then use
-    # `type` instead, if that seemed clearer.  That is:
-    # type('DriverTemplateScheduleForm', Form, our_fields)(**kwargs)
-    return ValveForm(**kwargs)
-
+    return render_template('scheduleBuilder.html', form=form, valveList=valveList)
+ 
 def setValve(unpickled, valve, state):
     data = unpickled['data']
     commandTupleList = unpickled['command']  # [(valve1,state1)...] 
@@ -219,7 +202,6 @@ def setValve(unpickled, valve, state):
     unpickled['command'] = commandTupleList
     pickled = pickle.dumps(unpickled)
     redis_client.set('valves',pickled)
-
 
 
 '''

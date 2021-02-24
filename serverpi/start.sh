@@ -10,6 +10,7 @@ python3 /home/pi/twistedApp/twistedApp.py &
 python3 /home/pi/zmqServer.py & 
 sudo python3 /home/pi/twistedApp/app/tools/network/pingLAN.py &
 echo "after pingLAN start" >> startlog.txt
+ps aux | grep mosquitto | awk '{print $2}' | head -n 1 | xargs sudo kill -9
 mosquitto 
 sleep 2
 python3 mqttServer.py &

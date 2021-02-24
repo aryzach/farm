@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+ <form action="" method="post" novalidate>
+     {{ form.hidden_tag() }}
+     {% for valve in valveList%}
+        <p>
+        {{valve}}
+        {{ form[valve] }}<br>
+        </p>
+     {% endfor %}
+     {{form['Submit']}}
+     
+ </form>
+
+{% endblock %}
