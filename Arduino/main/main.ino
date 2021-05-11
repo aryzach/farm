@@ -23,14 +23,14 @@ const char* ssid = "twistedfields";
 const char* password = "alwaysbekind";
 
 // MQTT
-const char* mqttServer = "192.168.1.123";
+const char* mqttServer = "192.168.1.7";
 const int mqttPort = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 // OTA
 HTTPClient httpClient;
-const int FW_VERSION = 1;
+const int FW_VERSION = 2;
 
 // hardware pins
 const int RELAY = 12;
@@ -46,8 +46,9 @@ struct entry
  };
 
 entry entries[] = {
-    { "C8:2B:96:4F:DC:A6", "p00d00"   },
-    { "testMAC"          , "testID" }
+    { "C8:2B:96:4F:DC:A6", "p00d00" },
+    { "D8:F1:5B:DA:E9:27", "p00d01" },
+    { "D8:F1:5B:E8:3B:51", "p00d02" }
 };
 
 
@@ -113,8 +114,10 @@ void checkForUpdates() {
 
   // get version
   Serial.println("checking for version update");
-  httpClient.begin("http://192.168.1.123/t.version");
+  httpClient.begin("http://192.168.1.123/postedVersion.version");
   int httpCode = httpClient.GET();
+  Serial.print("httpCode: ");
+  Serial.println(httpCode);
 
   if( httpCode == 200 ) {
     Serial.println("200");
@@ -126,7 +129,7 @@ void checkForUpdates() {
     if( newVersion > FW_VERSION ) {
       Serial.println( "Preparing to update" );
       // get binary
-      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/newVersion.bin");  
+      t_httpUpdate_return ret = ESPhttpUpdate.update("192.168.1.123", 80,"/postedVersion.bin");  
       switch(ret) {
         case HTTP_UPDATE_FAILED:
           Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());

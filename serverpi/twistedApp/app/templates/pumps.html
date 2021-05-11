@@ -21,6 +21,26 @@
       {{ form.offMedAg }}<br>
      </p>
      {% endif %}
+     {% if highAgPumpStatus == 'off' %}
+     <p>
+      {{ form.onHighAg }}<br>
+     </p>
+     {% else %}
+     <p>
+      {{ form.offHighAg }}<br>
+     </p>
+     {% endif %}
+     {% if domPumpStatus == 'off' %}
+     <p>
+      {{ form.onDom }}<br>
+     </p>
+     {% else %}
+     <p>
+      {{ form.offDom }}<br>
+     </p>
+     {% endif %}
+
+
  </form>
 
 {% endblock %}

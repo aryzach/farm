@@ -7,8 +7,12 @@ class PumpForm(FlaskForm):
     offLowAg = SubmitField('Turn Low Ag Off')
     onMedAg = SubmitField('Turn Med Ag On')
     offMedAg = SubmitField('Turn Med Ag Off')
+    onHighAg = SubmitField('Turn High Ag On')
+    offHighAg = SubmitField('Turn High Ag Off')
+    onDom = SubmitField('Turn Domestic On')
+    offDom = SubmitField('Turn Domestic Off')
 
-def ValveForm(valvesState):
+def ValveForm(orderedCommandList):
     """Dynamically creates a driver's schedule form"""
 
     # First we create the base form
@@ -20,9 +24,9 @@ def ValveForm(valvesState):
     # and create a select field for each
     # item_{d}_{i} in the set, setting each field
     # *on our **class**.
-    for valveTpl in valvesState:
-        valve = valveTpl[0]
-        state = valveTpl[1]
+    for tpl in orderedCommandList:
+        valve = tpl[0]
+        state = tpl[1]
         label = valve
         if state == 'off':
             field = SubmitField('Turn On')

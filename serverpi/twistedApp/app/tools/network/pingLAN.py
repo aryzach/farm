@@ -14,12 +14,15 @@ FREQUENCY = 60*10
 
 PINGFILE = os.path.join(os.path.dirname(__file__), 'ping.json')
 
-def getWLAN1_IP():
+def getWLAN_IP(num):
     try:
-        WLAN1_IP = ni.ifaddresses('wlan1')[ni.AF_INET][0]['addr']
-        return WLAN1_IP
+        if num == 0:
+            WLAN_IP = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
+        elif num == 1:
+            WLAN_IP = ni.ifaddresses('wlan1')[ni.AF_INET][0]['addr']
+        return WLAN_IP
     except:
-        print('not getting wlan1 IP address')
+        print('not getting wlan IP address')
         return None
 
 IPprefix = '192.168.1.'
@@ -32,14 +35,16 @@ cameras = toolz.keymap(lambda x : 'cam ' + x, (toolz.valmap(lambda x : IPprefix 
         'acorn':'237',
         'CSA':'235',
         'Farm Store':'229',
-        'front gate':'234',
-        'goat outdoor':'236',
-        'coop indoor':'40',
-        'coop outdoor':'42',
+        'front gate':'229',
+        'goat outdoor':'49',
+        'coop indoor':'112',
+        'coop outdoor':'111',
         'office':'48',
         'property':'126',
         'Chick Big Hutch':'137',
-        'Creek':'130'
+        'Farm Store':'107',
+        'Creek':'42',
+        'Goat Milk':'127'
         })))
 
 '''
@@ -108,9 +113,10 @@ while True:
     results = {}
     for destination in destinations:
         try:
-            if destination == 'satelliteWAN':
-                WLAN1_IP = getWLAN1_IP()
-                result = ping(destinations[destination],source=WLAN1_IP)
+            if destination == 'WAN coastside':
+                result = ping(destinations[destination],source=getWLAN_IP(0))
+            elif destination == 'WAN satellite':
+                result = ping(destinations[destination],source=getWLAN_IP(1))
             else:
                 result = ping(destinations[destination])
         except:

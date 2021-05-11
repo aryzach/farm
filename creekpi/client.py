@@ -9,7 +9,7 @@ REQUEST_TIMEOUT = 2500
 
 
 # IP where zmqServer.py is running
-serverIP = "192.168.1.123"
+serverIP = "192.168.1.7"
 port = "5556"
 serverDestination = serverIP + ":" + port 
 SERVER_ENDPOINT = "tcp://" + serverDestination
@@ -21,7 +21,7 @@ client.connect(SERVER_ENDPOINT)
 
 creekLogger = controller.CreekLogger()
 
-def control(lowAgCommand,medAgCommand):
+def control(lowAgCommand,medAgCommand,highAgCommand,domCommand):
     if lowAgCommand == "on":
         controller.cycleLowAg()
 
@@ -33,6 +33,18 @@ def control(lowAgCommand,medAgCommand):
 
     elif medAgCommand == "off":
         controller.medAgOff()
+
+    if highAgCommand == "on":
+        controller.cycleHighAg()
+
+    elif highAgCommand == "off":
+        controller.highAgOff()
+
+    if domCommand == "on":
+        controller.cycleDom()
+
+    elif domCommand == "off":
+        controller.domOff()
         
 while True:
     if creekLogger.decideCreekLowLog():
@@ -47,7 +59,7 @@ while True:
         if (client.poll(REQUEST_TIMEOUT) & zmq.POLLIN) != 0:
             pickledCommandDictionary = client.recv()
             unpickledCommandDictionary = pickle.loads(pickledCommandDictionary)
-            control(unpickledCommandDictionary['lowAg'], unpickledCommandDictionary['medAg'])
+            control(unpickledCommandDictionary['lowAg'], unpickledCommandDictionary['medAg'],unpickledCommandDictionary['highAg'],unpickledCommandDictionary['dom'])
             break
 
         # Socket is confused. Close and remove it.

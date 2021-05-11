@@ -7,11 +7,13 @@ GPIO.setmode(GPIO.BCM)
 
 # init list with pin numbers
 
-outpins = [14,15]
+outpins = [14,15,20,21]
 inpins = [2] 
 
 lowAgPin = 14
 medAgPin = 15
+highAgPin = 20
+domPin = 21
 
 floatSwitch = Button(2) 
 
@@ -67,9 +69,22 @@ def lowAgOff():
 def medAgOff():
     pumpOff(medAgPin)
 
+def highAgOff():
+    pumpOff(highAgPin)
+
+def domOff():
+    pumpOff(domPin)
+
+
 def cycleLowAg():
     cyclePump(lowAgPin)
 
 def cycleMedAg():
     cyclePump(medAgPin)
+
+def cycleHighAg():
+    cyclePump(highAgPin)
+
+def cycleDom():
+    cyclePump(domPin)
 

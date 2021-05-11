@@ -32,20 +32,25 @@ TESTSPEEDFILE = os.path.join(os.path.dirname(__file__), 'tools/network/testspeed
 #initialize database creekpi
 # TODO: redis.get(creekpi), if no value, then set all. If value exists, set only initial pump states and maybe others
 key = 'creekpi'
-commandDictionary = {"lowAg" : "off", "medAg" : "off"}
+commandDictionary = {
+        "lowAg" : "off", 
+        "medAg" : "off",
+        "highAg" : "off",
+        "dom" : "off"
+        }
 dataDictionary = {}
 fullValue = {'data' : dataDictionary, 'command' : commandDictionary}
 pickledFullValue = pickle.dumps(fullValue)
 redis_client.set(key,pickledFullValue)
 
 #initialize database valves 
-valveList = list(map(lambda x : "valve" + str(x), [item for item in range(0,6)])) 
+valveList = [ "p00d00" , "p00d01" , "p00d02" ] 
 key = 'valves'
-commandTupleList = []
+commandDict = {} 
 for valve in valveList:
-    commandTupleList.append((valve,'off'))
+    commandDict[valve] = 'off'
 dataDictionary = {}
-fullValue = {'data' : dataDictionary, 'command' : commandTupleList}
+fullValue = {'data' : dataDictionary, 'command' : commandDict}
 pickledFullValue = pickle.dumps(fullValue)
 redis_client.set(key,pickledFullValue)
 
@@ -74,6 +79,8 @@ def pumps():
 
     lowAgPumpStatus = command['lowAg']
     medAgPumpStatus = command['medAg']
+    highAgPumpStatus = command['highAg']
+    domPumpStatus = command['dom']
 
     if form.validate_on_submit():
         if form.onLowAg.data:
@@ -88,10 +95,23 @@ def pumps():
         elif form.offMedAg.data:
             setPumps(unpickled, 'medAg', 'off')
             return redirect(url_for('pumps'))
+        elif form.onHighAg.data:
+            setPumps(unpickled, 'highAg', 'on')
+            return redirect(url_for('pumps'))
+        elif form.offHighAg.data:
+            setPumps(unpickled, 'highAg', 'off')
+            return redirect(url_for('pumps'))
+        elif form.onDom.data:
+            setPumps(unpickled, 'dom', 'on')
+            return redirect(url_for('pumps'))
+        elif form.offDom.data:
+            setPumps(unpickled, 'dom', 'off')
+            return redirect(url_for('pumps'))
+
 
     #print(ping.getPing("creekpi"))
     if ping.getPing("creekpi") and timeIsRecent:
-        return render_template('pumps.html', form=form, lowAgPumpStatus=lowAgPumpStatus, medAgPumpStatus=medAgPumpStatus)
+        return render_template('pumps.html', form=form, lowAgPumpStatus=lowAgPumpStatus, medAgPumpStatus=medAgPumpStatus,highAgPumpStatus=highAgPumpStatus,domPumpStatus=domPumpStatus)
     else:
         return render_template('notAvailable.html', device='tom, creek thing')
 
@@ -163,15 +183,17 @@ def valves():
     # redis db should look like this:
     # key : '{ 'data' : {dataname1 : data1, dataname2: data2}, 'command' : {valve1: command1, valve2: command2}, 'time' : time}'
     unpickled = pickle.loads(pickled)   # [(valve1,state1)...]
-    commandTupleList = unpickled['command']
+    commandDict = unpickled['command']
+    orderedCommandList = sorted([(k, v) for k,v in commandDict.items()])
+    print(orderedCommandList)
+
     data = unpickled['data']
 
-    form = ValveForm(valvesState=commandTupleList)
+    form = ValveForm(orderedCommandList=orderedCommandList)
 
     if form.validate_on_submit():
-        for valveTpl in commandTupleList:
-            valve = valveTpl[0]
-            state = valveTpl[1]
+        for valve in commandDict:
+            state = commandDict[valve] 
             if form[valve].data:
                 if state == 'off':
                     setValve(unpickled, valve, 'on')
@@ -179,7 +201,7 @@ def valves():
                     setValve(unpickled, valve, 'off')
                 return redirect(url_for('valves'))
 
-    return render_template('valves.html', form=form, commandTupleList=commandTupleList)
+    return render_template('valves.html', form=form, orderedCommandList=orderedCommandList)
  
 
 @app.route('/createWaterSchedule', methods=['GET','POST'])
@@ -195,11 +217,9 @@ def createWaterSchedule():
  
 def setValve(unpickled, valve, state):
     data = unpickled['data']
-    commandTupleList = unpickled['command']  # [(valve1,state1)...] 
-    for i in range(0,len(commandTupleList)):
-        if commandTupleList[i][0] == valve:
-            commandTupleList[i] = (valve,state)
-    unpickled['command'] = commandTupleList
+    commandDict = unpickled['command']  # [(valve1,state1)...] 
+    commandDict[valve] = state
+    unpickled['command'] = commandDict
     pickled = pickle.dumps(unpickled)
     redis_client.set('valves',pickled)
 

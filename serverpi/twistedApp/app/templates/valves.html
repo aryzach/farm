@@ -3,9 +3,9 @@
 {% block content %}
  <form action="" method="post" novalidate>
      {{ form.hidden_tag() }}
-     {% for valveTpl in commandTupleList %}
-     {% set valve = valveTpl[0] %}
-     {% set state = valveTpl[1] %}
+     {% for tpl in orderedCommandList %}
+     {% set valve = tpl[0] %}
+     {% set state = tpl[1] %}
 
         <p>
         {{valve}}

@@ -1,0 +1,12 @@
+inputV = 24
+r2/r1 = 9.5 
+Vr = 3.9 
+
+new on solar
+16 on , 10 off
+inputV = 5
+r2/r1 = 3
+Vr = 3
+
+Achieves 15 on 10 off
+r2 / r1 / to ground = 3.3 / 1 / 2.2
